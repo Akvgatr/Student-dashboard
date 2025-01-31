@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.Whitenoisemiddleware'
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Correct middleware
 ]
 
 ROOT_URLCONF = 'studentstudyportal.urls'
