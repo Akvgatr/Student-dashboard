@@ -25,8 +25,9 @@ SECRET_KEY = 'django-insecure--ia45a!uecreny4li6ox6a)w!e#d!gmze%42vdy$_9_x(=w1r_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'student-dashboard-xhvt.onrender.com']
 
 # Application definition
 
