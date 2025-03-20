@@ -1,41 +1,326 @@
-={% extends 'dashboard/base.html' %} 
+{% extends 'dashboard/base.html' %} 
 {% load static %}
 {% load crispy_forms_tags%}
 {% block content %}
 
-<div class="container">
+<style>
+    /* Notes Page Styling */
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --dark-bg: #0D0907;
+        --form-bg: rgba(255, 255, 255, 0.03);
+        --input-bg: rgba(255, 255, 255, 0.07);
+        --text-color: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border-color: rgba(0, 0, 0, 0.1);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .notes-container {
+        position: relative;
+        padding: 30px 0;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(67, 56, 202, 0.05) 100%);
+    }
+
+    .notes-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "dashboard/img/notes-bg.png" %}'), 
+                          radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 70%);
+        background-size: 200px, cover;
+        background-repeat: repeat, no-repeat;
+        background-position: center, top right;
+        opacity: 0.07;
+        z-index: -1;
+        border-radius: 16px;
+    }
+
+    .notes-header {
+        text-align: center;
+        margin-bottom: 30px;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .notes-header h2 {
+        position: relative;
+        display: inline-block;
+        font-size: 28px;
+        padding-bottom: 10px;
+    }
+
+    .notes-header h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(to right, var(--primary-light), var(--primary-color));
+        border-radius: 3px;
+    }
+
+    /* Note Card Styling */
+    .note-card-wrapper {
+        perspective: 1000px;
+        margin-bottom: 30px;
+    }
+
+    .note-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+        height: 220px;
+        display: flex;
+        flex-direction: column;
+        transform-style: preserve-3d;
+        transform: rotateY(0deg);
+    }
+
+    .note-card:hover {
+        transform: translateY(-5px) rotateY(5deg);
+        box-shadow: 0 15px 30px rgba(67, 56, 202, 0.2);
+    }
+
+    .note-card-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        padding: 15px;
+        font-weight: 600;
+        font-size: 18px;
+        border-radius: 12px 12px 0 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .note-card-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1));
+    }
+
+    .note-card-body {
+        padding: 15px;
+        color: var(--text-color);
+        flex-grow: 1;
+        border-left: 1px solid rgba(67, 56, 202, 0.1);
+        border-right: 1px solid rgba(67, 56, 202, 0.1);
+        background-color: rgba(255, 255, 255, 0.8);
+        position: relative;
+    }
+
+    .note-card-body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 40px;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(67, 56, 202, 0.03), transparent);
+    }
+
+    .note-card-footer {
+        padding: 10px 15px;
+        background-color: white;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid rgba(67, 56, 202, 0.1);
+        border-radius: 0 0 12px 12px;
+        border-left: 1px solid rgba(67, 56, 202, 0.1);
+        border-right: 1px solid rgba(67, 56, 202, 0.1);
+        border-bottom: 1px solid rgba(67, 56, 202, 0.1);
+    }
+
+    .delete-btn {
+        color: #e74c3c;
+        background-color: rgba(231, 76, 60, 0.1);
+        border-radius: 8px;
+        padding: 8px 12px;
+        transition: all 0.3s ease;
+    }
+
+    .delete-btn:hover {
+        background-color: rgba(231, 76, 60, 0.2);
+        color: #c0392b;
+    }
+
+    .no-notes-message {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 40px 0;
+        font-style: italic;
+    }
+
+    /* Form styling */
+    .form-container {
+        background-color: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary-color), var(--primary-light));
+        border-radius: 16px 0 0 16px;
+    }
+
+    .form-legend {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 24px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-light);
+        margin-bottom: 25px;
+    }
+
+    .create-btn {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(67, 56, 202, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .create-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .create-btn:hover {
+        background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(67, 56, 202, 0.4);
+        color: white;
+    }
+
+    .create-btn:hover:before {
+        left: 100%;
+    }
+
+    /* Note link styling */
+    .note-link {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .note-link:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .note-card-wrapper {
+        animation: fadeIn 0.5s ease-out forwards;
+        animation-delay: calc(var(--animation-order) * 0.1s);
+        opacity: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .form-container {
+            padding: 20px;
+        }
+        
+        .note-card {
+            height: auto;
+            min-height: 180px;
+        }
+    }
+</style>
+
+<div class="container notes-container">
+    <div class="notes-header">
+        <h2><i class="fas fa-sticky-note me-2"></i>My Notes</h2>
+    </div>
+    
     <div class="row">
-        {% for note in notes %}
-        <div class="col-md-3">
-            <a href="{% url 'notes-detail' note.id %}">
-                <div class="card">
-                    <div class="card-header">{{ note.title }}</div>
-                    <div class="card-body">{{ note.description|slice:"0:100" }}</div>
-                    <div class="card-footer mt-auto">
-<a href="{% url 'delete-note' note.id %}">
-                            <i class="fa fa-trash fa-2x"></i>
-                        </a>
+        {% if notes %}
+            {% for note in notes %}
+            <div class="col-md-4 col-lg-3 note-card-wrapper" style="--animation-order: {{ forloop.counter }}">
+                <a href="{% url 'notes-detail' note.id %}" class="note-link">
+                    <div class="note-card">
+                        <div class="note-card-header">{{ note.title }}</div>
+                        <div class="note-card-body">
+                            {% if note.description %}
+                                {{ note.description|slice:"0:100" }}{% if note.description|length > 100 %}...{% endif %}
+                            {% else %}
+                                <span class="text-muted fst-italic">No description</span>
+                            {% endif %}
+                        </div>
+                        <div class="note-card-footer">
+                            <a href="{% url 'delete-note' note.id %}" class="delete-btn">
+                                <i class="fa fa-trash"></i>
+                            </a>
+                        </div>
                     </div>
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="no-notes-message">
+                    <i class="fas fa-info-circle me-2"></i> You don't have any notes yet. Create your first note below!
                 </div>
-            </a>
-        </div>
-        {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </div>
 
-<br><br>
-
 <div class="container">
-    <form method="POST" action="{% url 'notes' %}">
-        {% csrf_token %}
-        <fieldset class="form-group">
-            <legend class="border-bottom mb-4">Create Notes</legend>
-        </fieldset>
-        {{ form|crispy }}
-        <div class="form-group">
-            <button class="btn btn-outline-info" type="submit">Create</button>
-        </div>
-    </form>
+    <div class="form-container">
+        <form method="POST" action="{% url 'notes' %}">
+            {% csrf_token %}
+            <fieldset class="form-group">
+                <legend class="form-legend"><i class="fas fa-plus-circle me-2"></i>Create New Note</legend>
+            </fieldset>
+            {{ form|crispy }}
+            <div class="form-group text-end mt-4">
+                <button class="create-btn" type="submit">
+                    <i class="fas fa-paper-plane me-2"></i>Create Note
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% endblock content %}

@@ -1,41 +1,375 @@
 {% extends 'dashboard/base.html' %} 
 {% load static %} 
 {% block content %}
-<section class='text-center container'>
-    <h2>Student Dictionary</h2>
-    <p>Enter any word to get the phonetics, definition and an example for the word</p>
-    <form action="" method="post">
-        {% csrf_token %}
-        {{form}}
-        <input class="btn btn-danger" type="submit" value="Submit">
-    </form><br>
-    <div class="content-section p-0 mt-5">
-        {% if input %}
-        <div class="custom-header">
-            <h2>{{input}}</h2>
-            <h6>{{phonetics}}</h6>
-            <audio id="player" src="{{audio}}"></audio>
-            <div>
-                <a onclick="document.getElementById('player').play()"<i class='fa fa-volume-up fa-2x'></i></a>
+{% load crispy_forms_tags %}
 
-            </div>
+<style>
+    /* Global Variables - Matching the Notes Page Styling */
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --dark-bg: #0D0907;
+        --form-bg: rgba(255, 255, 255, 0.03);
+        --input-bg: rgba(255, 255, 255, 0.07);
+        --text-color: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border-color: rgba(0, 0, 0, 0.1);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --dict-purple: #8b5cf6;
+        --dict-light: #c4b5fd;
+    }
+
+    /* Dictionary Container Styling */
+    .dictionary-container {
+        position: relative;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, rgba(196, 181, 253, 0.05) 100%);
+    }
+
+    .dictionary-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "dashboard/img/notes-bg.png" %}'), 
+                          radial-gradient(circle at top right, rgba(139, 92, 246, 0.1), transparent 70%);
+        background-size: 200px, cover;
+        background-repeat: repeat, no-repeat;
+        background-position: center, top right;
+        opacity: 0.07;
+        z-index: -1;
+        border-radius: 16px;
+    }
+
+    /* Section Headers */
+    .dictionary-header {
+        text-align: center;
+        margin-bottom: 25px;
+        color: var(--dict-purple);
+        font-weight: 600;
+    }
+
+    .dictionary-header h2 {
+        position: relative;
+        display: inline-block;
+        font-size: 32px;
+        padding-bottom: 10px;
+    }
+
+    .dictionary-header h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(to right, var(--dict-purple), var(--dict-light));
+        border-radius: 3px;
+    }
+
+    .dictionary-header p {
+        color: var(--text-muted);
+        font-size: 16px;
+        margin-top: 10px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Search Form Styling */
+    .search-form-container {
+        background-color: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .search-form-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--dict-purple), var(--dict-light));
+        border-radius: 16px 0 0 16px;
+    }
+
+    .search-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .search-form input[type="text"] {
+        flex-grow: 1;
+        border: 2px solid rgba(139, 92, 246, 0.1);
+        border-radius: 8px;
+        padding: 12px 20px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-form input[type="text"]:focus {
+        border-color: var(--dict-purple);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        outline: none;
+    }
+
+    .search-btn {
+        background: linear-gradient(135deg, var(--dict-purple), #7c3aed);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .search-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .search-btn:hover {
+        background: linear-gradient(135deg, #7c3aed, var(--dict-purple));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        color: white;
+    }
+
+    .search-btn:hover:before {
+        left: 100%;
+    }
+
+    /* Word Result Styling */
+    .word-result {
+        max-width: 700px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        animation: fadeIn 0.6s ease-out forwards;
+    }
+
+    .word-header {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(196, 181, 253, 0.1));
+        padding: 25px;
+        text-align: center;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    }
+
+    .word-title {
+        color: var(--dict-purple);
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0;
+        margin-bottom: 8px;
+    }
+
+    .word-phonetics {
+        color: var(--text-muted);
+        font-size: 18px;
+        font-weight: 400;
+        font-style: italic;
+        margin: 0 0 15px 0;
+    }
+
+    .audio-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--dict-purple), #7c3aed);
+        color: white;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .audio-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .word-content {
+        padding: 25px;
+    }
+
+    .definition-box, .example-box {
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: rgba(139, 92, 246, 0.03);
+    }
+
+    .definition-box h4, .example-box h4 {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        color: var(--dict-purple);
+        font-weight: 600;
+    }
+
+    .definition-box h4 i, .example-box h4 i {
+        margin-right: 10px;
+    }
+
+    .definition-text, .example-text {
+        color: var(--text-color);
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .synonyms-section {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .synonyms-title {
+        font-weight: 600;
+        color: var(--dict-purple);
+        margin-right: 5px;
+    }
+
+    .synonym-tag {
+        background-color: rgba(139, 92, 246, 0.1);
+        color: var(--dict-purple);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .synonym-tag:hover {
+        background-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .error-message {
+        text-align: center;
+        padding: 30px;
+        color: var(--text-muted);
+    }
+
+    .error-message h2 {
+        color: #ef4444;
+        margin-bottom: 10px;
+        font-size: 24px;
+    }
+
+    .error-message p {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .search-form {
+            flex-direction: column;
+        }
+        
+        .search-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="container dictionary-container">
+    <!-- Dictionary Header -->
+    <div class="dictionary-header">
+        <h2><i class="fas fa-book-open me-2"></i>Student Dictionary</h2>
+        <p>Enter any word to get the phonetics, definition and an example for the word</p>
+    </div>
+    
+    <!-- Search Form -->
+    <div class="search-form-container">
+        <form action="" method="post" class="search-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button class="search-btn" type="submit">
+                <i class="fas fa-search me-2"></i>Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Word Results -->
+    {% if input %}
+    <div class="word-result">
+        <div class="word-header">
+            <h2 class="word-title">{{ input }}</h2>
+            <h6 class="word-phonetics">{{ phonetics }}</h6>
+            <audio id="player" src="{{ audio }}"></audio>
+            <button class="audio-btn" onclick="document.getElementById('player').play()">
+                <i class="fa fa-volume-up"></i>
+            </button>
         </div>
 
-        <hr class="p-0 m-0">
-
-        <p class="float-left">
-            <h4>Definition: {{definition}}</h4>
-            <h4>Example: {{example}}</h4>
-        </p>
-        Synonyms:
-        {% for synonym in synonyms %}
-            {{synonyms}}
-        {% endfor %}
-        <hr>
-
+        <div class="word-content">
+            {% if definition %}
+            <div class="definition-box">
+                <h4><i class="fas fa-info-circle"></i> Definition</h4>
+                <div class="definition-text">{{ definition }}</div>
+            </div>
+            {% endif %}
+            
+            {% if example %}
+            <div class="example-box">
+                <h4><i class="fas fa-quote-left"></i> Example</h4>
+                <div class="example-text">{{ example }}</div>
+            </div>
+            {% endif %}
+            
+            {% if synonyms %}
+            <div class="synonyms-section">
+                <span class="synonyms-title">Synonyms:</span>
+                {% for synonym in synonyms %}
+                <span class="synonym-tag">{{ synonym }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
     </div>
-    {% else %}
-    <h2>Sorry, API request limit exceeded</h2>
-{% endif %}    
+    {% elif form.is_bound %}
+    <div class="error-message">
+        <h2><i class="fas fa-exclamation-circle"></i> Sorry</h2>
+        <p>API request limit exceeded. Please try again later.</p>
+    </div>
+    {% endif %}
 </section>
+
 {% endblock content %}

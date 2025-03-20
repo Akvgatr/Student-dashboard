@@ -1,47 +1,341 @@
 {% extends 'dashboard/base.html' %} 
 {% load static %} 
 {% block content %}
-{% load crispy_forms_tags%}
-<section class='text-center container'>
-    <h2>Search Videos in Youtube</h2>
-    <p>search videos and select any video to open in youtube</p>
-    <form action="" method="post">
-    {% csrf_token %}
-        {{form}}
-        <input class="btn btn-danger" type="submit" value="Submit">
-    </form><br>
+{% load crispy_forms_tags %}
 
-{% for result in result_list %}
+<style>
+    /* Global Variables - Matching the Notes Page Styling */
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --dark-bg: #0D0907;
+        --form-bg: rgba(255, 255, 255, 0.03);
+        --input-bg: rgba(255, 255, 255, 0.07);
+        --text-color: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border-color: rgba(0, 0, 0, 0.1);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --youtube-red: #ff0000;
+        --youtube-dark: #282828;
+    }
 
-    <a href="{{result.link}}" target="_blank">
-        <div class="card">
-            <div class="card-header">
-                <div class="row">
-                    <div class="col-md-5">
-                        <img class="img-fluid" src="{{result.thumbnail}}" alt="">
+    /* YouTube Container Styling */
+    .youtube-container {
+        position: relative;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        background: linear-gradient(135deg, rgba(255, 0, 0, 0.03) 0%, rgba(99, 102, 241, 0.05) 100%);
+    }
 
-                    </div>
-                    <div class="col-md-7">
-                        <h3 class="p-0 m-0">{{result.title}}</h3>
-                        <b>
-                            <u>
-                                <h5 class="p-0 m-0">{{result.channel}}</h5>
-                            </u>
-                        </b>
-                        <h6 class="p-0 m-1">{{result.description}}</h6>
-                        <b>
-                            <h6 class="ml-0 mt-3">{{result.duration}}</h6>
-                            <h6 class="ml-0 mt-1">{{result.views}}</h6>
-                            <h6 class="ml-0 mt-1">{{result.published}}</h6>
-                        </b>
+    .youtube-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "dashboard/img/notes-bg.png" %}'), 
+                          radial-gradient(circle at top right, rgba(255, 0, 0, 0.1), transparent 70%);
+        background-size: 200px, cover;
+        background-repeat: repeat, no-repeat;
+        background-position: center, top right;
+        opacity: 0.07;
+        z-index: -1;
+        border-radius: 16px;
+    }
+
+    /* Section Headers */
+    .youtube-header {
+        text-align: center;
+        margin-bottom: 25px;
+        color: var(--youtube-red);
+        font-weight: 600;
+    }
+
+    .youtube-header h2 {
+        position: relative;
+        display: inline-block;
+        font-size: 32px;
+        padding-bottom: 10px;
+    }
+
+    .youtube-header h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(to right, var(--youtube-red), var(--primary-light));
+        border-radius: 3px;
+    }
+
+    .youtube-header p {
+        color: var(--text-muted);
+        font-size: 16px;
+        margin-top: 10px;
+    }
+
+    /* Search Form Styling */
+    .search-form-container {
+        background-color: white;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 40px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .search-form-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--youtube-red), var(--primary-light));
+        border-radius: 16px 0 0 16px;
+    }
+
+    .search-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .search-form input[type="text"] {
+        flex-grow: 1;
+        border: 2px solid rgba(67, 56, 202, 0.1);
+        border-radius: 8px;
+        padding: 12px 20px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .search-form input[type="text"]:focus {
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        outline: none;
+    }
+
+    .search-btn {
+        background: linear-gradient(135deg, var(--youtube-red), #cc0000);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .search-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .search-btn:hover {
+        background: linear-gradient(135deg, #cc0000, var(--youtube-red));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+        color: white;
+    }
+
+    .search-btn:hover:before {
+        left: 100%;
+    }
+
+    /* Video Results Styling */
+    .video-results {
+        max-width: 850px;
+        margin: 0 auto;
+    }
+
+    .video-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        transform-style: preserve-3d;
+        animation: fadeIn 0.5s ease-out forwards;
+        border: none;
+    }
+
+    .video-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-link {
+        text-decoration: none;
+        color: var(--text-color);
+        display: block;
+    }
+
+    .video-link:hover {
+        text-decoration: none;
+        color: var(--text-color);
+    }
+
+    .video-card-header {
+        padding: 0;
+        border: none;
+        background-color: white;
+    }
+
+    .video-thumbnail {
+        border-radius: 12px 0 0 12px;
+        height: 100%;
+        object-fit: cover;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-info {
+        padding: 15px;
+        text-align: left;
+    }
+
+    .video-title {
+        color: var(--text-color);
+        font-weight: 600;
+        font-size: 18px;
+        line-height: 1.3;
+        margin-bottom: 10px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .video-channel {
+        color: var(--youtube-red);
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .video-description {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 15px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .video-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .video-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .video-thumbnail {
+            border-radius: 12px 12px 0 0;
+            width: 100%;
+            height: auto;
+        }
+        
+        .video-card .row {
+            flex-direction: column;
+        }
+        
+        .search-form {
+            flex-direction: column;
+        }
+        
+        .search-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="container youtube-container">
+    <!-- YouTube Header -->
+    <div class="youtube-header">
+        <h2><i class="fab fa-youtube me-2"></i>YouTube Search</h2>
+        <p>Search videos and select any video to open in YouTube</p>
+    </div>
+    
+    <!-- Search Form -->
+    <div class="search-form-container">
+        <form action="" method="post" class="search-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button class="search-btn" type="submit">
+                <i class="fas fa-search me-2"></i>Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Video Results -->
+    <div class="video-results">
+        {% for result in result_list %}
+        <div class="video-card" style="--animation-order: {{ forloop.counter }}">
+            <a href="{{ result.link }}" target="_blank" class="video-link">
+                <div class="card-header video-card-header">
+                    <div class="row g-0">
+                        <div class="col-md-5">
+                            <img class="img-fluid video-thumbnail" src="{{ result.thumbnail }}" alt="{{ result.title }}">
+                        </div>
+                        <div class="col-md-7">
+                            <div class="video-info">
+                                <h3 class="video-title">{{ result.title }}</h3>
+                                <div class="video-channel">
+                                    <i class="fas fa-user-circle me-1"></i>{{ result.channel }}
+                                </div>
+                                <div class="video-description">{{ result.description }}</div>
+                                <div class="video-meta">
+                                    <div class="video-meta-item">
+                                        <i class="fas fa-clock"></i> {{ result.duration }}
+                                    </div>
+                                    <div class="video-meta-item">
+                                        <i class="fas fa-eye"></i> {{ result.views }}
+                                    </div>
+                                    <div class="video-meta-item">
+                                        <i class="fas fa-calendar-alt"></i> {{ result.published }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
-    </a>
-    {% endfor %}
-
-    <br>
+        {% endfor %}
+    </div>
 </section>
 
 {% endblock content %}

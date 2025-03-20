@@ -262,87 +262,169 @@ def dictionary(request):
 
 
 def wiki(request):
-    if request.method=='POST':
-        text=request.POST['text']
+    if request.method == 'POST':
+        text = request.POST['text']
         form = DashboardForm(request.POST)
-        search=wikipedia.page(text)
-        context={
-           'form':form ,
-           'title':search.title,
-           'link':search.url,
-           'details':search.summary
+        
+        try:
+            search = wikipedia.page(text)
+            context = {
+                'form': form,
+                'title': search.title,
+                'link': search.url,
+                'details': search.summary
+            }
+        except wikipedia.DisambiguationError as e:
+            context = {
+                'form': form,
+                'error': "Your search term is ambiguous. Please refine your query.",
+                'options': e.options  # Display possible options for the user
+            }
+        except wikipedia.PageError:
+            context = {
+                'form': form,
+                'error': "No matching page found. Please try another term."
+            }
+        except Exception as e:
+            context = {
+                'form': form,
+                'error': f"An unexpected error occurred: {str(e)}"
+            }
 
-        }
         return render(request, 'dashboard/wiki.html', context)
     else:
-        form=DashboardForm()
-        context={
-            'form':form
-        }
-    return render(request, 'dashboard/wiki.html', context)
+        form = DashboardForm()
+        return render(request, 'dashboard/wiki.html', {'form': form})
 
 def conversion(request):
-    if request.method=='POST':
-        form=ConversionForm(request.POST)
-        if request.POST['measurement']=='length':
-            measurement_form=ConversionLengthForm()
-            context={
-                'form':form,
-                'm_form':measurement_form,
-                'input':True
+    if request.method == 'POST':
+        form = ConversionForm(request.POST)
+        measurement_type = request.POST.get('measurement')
 
-            }
+        answer = ''
+        if measurement_type == 'length':
+            measurement_form = ConversionLengthForm()
             if 'input' in request.POST:
-                first=request.POST['measure1']
-                second=request.POST['measure2']
-                input=request.POST['input']
-                answer=''
-                if input and int(input)>=0:
-                    if first=='yard' and second=='foot':
-                        answer=f'{input} yard= {int(input)*3} foot' 
-                    if first=='foot' and second=='yard':
-                        answer=f'{input} foot= {int(input)/3} yard'
-            
-                context={
-                    'form':form,
-                    'm_form':measurement_form,
-                    'input':True,
-                    'answer':answer
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = request.POST.get('input')
 
+                conversions = {
+                    'yard': {'foot': 3, 'meter': 0.9144, 'inch': 36},
+                    'foot': {'yard': 1/3, 'meter': 0.3048, 'inch': 12},
+                    'meter': {'yard': 1.09361, 'foot': 3.28084, 'inch': 39.3701},
+                    'inch': {'foot': 1/12, 'yard': 1/36, 'meter': 0.0254},
+                    'mile': {'km': 1.60934},
+                    'km': {'mile': 0.621371}
                 }
-        if request.POST['measurement']=='mass':
-            measurement_form=ConversionMassForm()
-            context={
-                'form':form,
-                'm_form':measurement_form,
-                'input':True
 
-            }
+                if first in conversions and second in conversions[first]:
+                    result = float(input_value) * conversions[first][second]
+                    answer = f'{input_value} {first} = {result:.4f} {second}'
+
+        elif measurement_type == 'mass':
+            measurement_form = ConversionMassForm()
             if 'input' in request.POST:
-                first=request.POST['measure1']
-                second=request.POST['measure2']
-                input=request.POST['input']
-                answer=''
-                if input and int(input)>=0:
-                    if first=='pound' and second=='kilogram':
-                        answer=f'{input} yard= {int(input)*0.453} kilogram' 
-                    if first=='kilogram' and second=='pound':
-                        answer=f'{input} kilogram= {int(input)/2.2} pound'
-            
-                context={
-                    'form':form,
-                    'm_form':measurement_form,
-                    'input':True,
-                    'answer':answer
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = request.POST.get('input')
 
+                conversions = {
+                    'pound': {'kilogram': 0.453592, 'gram': 453.592, 'ounce': 16},
+                    'kilogram': {'pound': 2.20462, 'gram': 1000},
+                    'gram': {'kilogram': 0.001, 'pound': 0.00220462},
+                    'ounce': {'pound': 1/16},
+                    'ton': {'kilogram': 907.184, 'pound': 2000}
                 }
+
+                if first in conversions and second in conversions[first]:
+                    result = float(input_value) * conversions[first][second]
+                    answer = f'{input_value} {first} = {result:.4f} {second}'
+
+        elif measurement_type == 'temperature':
+            measurement_form = ConversionTemperatureForm()
+            if 'input' in request.POST:
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = float(request.POST.get('input'))
+
+                if first == 'Celsius' and second == 'Fahrenheit':
+                    result = (input_value * 9/5) + 32
+                elif first == 'Fahrenheit' and second == 'Celsius':
+                    result = (input_value - 32) * 5/9
+                elif first == 'Celsius' and second == 'Kelvin':
+                    result = input_value + 273.15
+                elif first == 'Kelvin' and second == 'Celsius':
+                    result = input_value - 273.15
+                elif first == 'Fahrenheit' and second == 'Kelvin':
+                    result = (input_value - 32) * 5/9 + 273.15
+                elif first == 'Kelvin' and second == 'Fahrenheit':
+                    result = (input_value - 273.15) * 9/5 + 32
+                else:
+                    result = input_value  # If same units
+
+                answer = f'{input_value} {first} = {result:.2f} {second}'
+
+        elif measurement_type == 'time':
+            measurement_form = ConversionTimeForm()
+            if 'input' in request.POST:
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = float(request.POST.get('input'))
+
+                conversions = {
+                    'second': {'minute': 1/60, 'hour': 1/3600, 'day': 1/86400},
+                    'minute': {'second': 60, 'hour': 1/60, 'day': 1/1440},
+                    'hour': {'second': 3600, 'minute': 60, 'day': 1/24},
+                    'day': {'second': 86400, 'minute': 1440, 'hour': 24, 'week': 1/7, 'month': 1/30, 'year': 1/365},
+                    'week': {'day': 7, 'month': 1/4.345, 'year': 1/52},
+                    'month': {'day': 30, 'year': 1/12},
+                    'year': {'day': 365, 'month': 12}
+                }
+
+                if first in conversions and second in conversions[first]:
+                    result = input_value * conversions[first][second]
+                    answer = f'{input_value} {first} = {result:.2f} {second}'
+
+        elif measurement_type == 'volume':
+            measurement_form = ConversionVolumeForm()
+            if 'input' in request.POST:
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = float(request.POST.get('input'))
+
+                conversions = {
+                    'liter': {'milliliter': 1000, 'cubic meter': 0.001, 'gallon': 0.264172},
+                    'milliliter': {'liter': 0.001},
+                    'cubic meter': {'liter': 1000},
+                    'gallon': {'liter': 3.78541, 'quart': 4},
+                    'quart': {'gallon': 1/4, 'pint': 2},
+                    'pint': {'quart': 1/2}
+                }
+
+                if first in conversions and second in conversions[first]:
+                    result = input_value * conversions[first][second]
+                    answer = f'{input_value} {first} = {result:.2f} {second}'
+
+        else:
+            measurement_form = None
+
+        context = {
+            'form': form,
+            'm_form': measurement_form,
+            'input': True,
+            'answer': answer
+        }
+    
     else:
-        form=ConversionForm()
-        context={
-            'form':form,
-            'input':False
-    }
-    return render(request, "dashboard/conversion.html",context)
+        form = ConversionForm()
+        context = {
+            'form': form,
+            'input': False
+        }
+
+    return render(request, "dashboard/conversion.html", context)
+
 
 
 

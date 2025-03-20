@@ -1,25 +1,404 @@
 {% extends "dashboard/base.html" %}
 {% load static %}
 {% load crispy_forms_tags %}
-{% block content %}
 
-<div class="container">
-  <form method="POST">
-  {% csrf_token %}
-    <fieldset class="form-group">
-      <legend class="border-bottom mb-4">Join Today</legend>
-      {{form|crispy}}
-    </fieldset>
-    <div class="form-group">
-      <button href="" class="btn btn-outline-info" type="submit">
-        Sign Up
-      </button>
+{% block content %}
+<style>
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --dark-bg: #0D0907;
+        --form-bg: rgba(255, 255, 255, 0.03);
+        --input-bg: rgba(255, 255, 255, 0.07);
+        --text-color: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border-color: rgba(0, 0, 0, 0.1);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .login-container {
+        display: flex;
+        width: 90%;
+        max-width: 1000px;
+        margin: 60px auto;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        overflow: hidden;
+        background-color: #fff;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    /* Left side - form container */
+    .form-container {
+        width: 50%;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+        z-index: 0;
+    }
+
+    .form-box {
+        position: relative;
+        z-index: 1;
+        animation: slideUp 0.8s ease-out;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .logo {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .logo i {
+        font-size: 40px;
+        color: var(--primary-light);
+        background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .login-title {
+        font-size: 28px;
+        color: var(--text-color);
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .login-subtitle {
+        font-size: 16px;
+        color: var(--text-muted);
+        margin-bottom: 30px;
+    }
+
+    /* Form styling */
+    .form-legend {
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--primary-light);
+        color: var(--text-color);
+        font-weight: 600;
+        margin-bottom: 25px;
+        font-size: 22px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 15px 20px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        outline: none;
+    }
+
+    /* Button styling */
+    .login-btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 15px rgba(67, 56, 202, 0.3);
+        position: relative;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .login-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .login-btn:hover {
+        background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(67, 56, 202, 0.4);
+    }
+
+    .login-btn:hover:before {
+        left: 100%;
+    }
+
+    .login-footer {
+        text-align: center;
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .register-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .register-link:hover {
+        color: var(--primary-hover);
+        text-decoration: underline;
+    }
+
+    /* Right side - image container */
+    .image-container {
+        width: 50%;
+        background: linear-gradient(135deg, #4338ca, #3730a3);
+        color: white;
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 1s ease-out;
+    }
+
+    .image-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('{% static "dashboard/img/background.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15;
+        z-index: 0;
+    }
+
+    .image-content {
+        position: relative;
+        z-index: 1;
+        padding: 40px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        animation: slideUp 0.8s ease-out 0.3s both;
+    }
+
+    .image-container h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, #ffffff, #b3b3ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 1px;
+    }
+
+    .image-container p {
+        font-size: 18px;
+        opacity: 0.9;
+        line-height: 1.6;
+        margin-bottom: 30px;
+    }
+
+    /* Features section */
+    .features {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        text-align: left;
+        margin-top: 30px;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .feature-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+    }
+
+    .feature-text {
+        flex: 1;
+    }
+
+    .feature-text h3 {
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+
+    .feature-text p {
+        font-size: 14px;
+        opacity: 0.7;
+        margin: 0;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .login-container {
+            flex-direction: column;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .form-container, .image-container {
+            width: 100%;
+        }
+        
+        .image-container {
+            display: none;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .login-container {
+            margin: 30px auto;
+            width: 95%;
+        }
+        
+        .form-container {
+            padding: 20px;
+        }
+        
+        .login-title {
+            font-size: 24px;
+        }
+        
+        .login-subtitle {
+            font-size: 14px;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <!-- Left Side - Register Form -->
+    <div class="form-container">
+        <div class="form-box">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h1 class="login-title">Join Today</h1>
+                <p class="login-subtitle">Create an account to access your student dashboard</p>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="POST">
+                {% csrf_token %}
+                <fieldset class="form-group">
+                    <legend class="form-legend">Sign Up</legend>
+                    {{ form|crispy }}
+                </fieldset>
+                <div class="form-group">
+                    <button class="login-btn" type="submit">
+                        <i class="fas fa-user-plus"></i> Sign Up
+                    </button>
+                </div>
+            </form>
+            
+            <div class="login-footer">
+                <p>Already have an account? 
+                    <a class="register-link" href="{% url 'login' %}">Sign In</a>
+                </p>
+            </div>
+        </div>
     </div>
-  </form>
-  <div class="border-top pt-3">
-    <small class="text-muted">Already have an account?
-      <a class="ml-2" href="{% url 'login'%}">Sign In</a>
-    </small>
-  </div>
+    
+    <!-- Right Side - Image Section -->
+    <div class="image-container">
+        <div class="image-content">
+            <h1>Student Dashboard</h1>
+            <p>Join our platform and take control of your academic journey with our powerful tools.</p>
+            
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Personalized Learning</h3>
+                        <p>Customize your profile and learning experience</p>
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Course Management</h3>
+                        <p>Organize and access all your courses in one place</p>
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Connect with Peers</h3>
+                        <p>Collaborate with classmates on projects and discussions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Include Font Awesome if not already in base.html -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 {% endblock content %}

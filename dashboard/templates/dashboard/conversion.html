@@ -1,49 +1,301 @@
 {% extends 'dashboard/base.html' %} 
 {% load static %} 
 {% block content %}
-{% load crispy_forms_tags%}
-<div class="container text-center">
-    <form method="POST">
-    {% csrf_token %}
-        <div class="form-group">
-        <label for="name">Name:</label>
-            <legend class='border-bottom mb-4'>
-            </legend>
-            {{form|crispy}}
-            <button href="" class="btn btn-outline-info" type="submit">
-                Select
-            </button>
-        </div>
-        
-        
-        {% if input %}
-        <fieldset class="form-group">
-            <legend class="border-bottom mb-4"></legend>
-            <div class="row">
-                <div class="col-md-4">
-                    {{m_form.input|as_crispy_field}}
-                </div> 
-                <div class="col-md-4">
+{% load crispy_forms_tags %}
 
-                {{m_form.measure1|as_crispy_field}}
+<style>
+    /* Global Variables */
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --dark-bg: #0D0907;
+        --form-bg: rgba(255, 255, 255, 0.03);
+        --input-bg: rgba(255, 255, 255, 0.07);
+        --text-color: #2c3e50;
+        --text-muted: #7f8c8d;
+        --border-color: rgba(0, 0, 0, 0.1);
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --converter-teal: #00c9a7;
+        --converter-blue: #3f87f5;
+    }
 
-                </div>
-                <div class="col-md-4">
+    /* Converter Container Styling */
+    .converter-container {
+        position: relative;
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 40px;
+        background: linear-gradient(135deg, rgba(0, 201, 167, 0.03) 0%, rgba(63, 135, 245, 0.05) 100%);
+    }
+
+    .converter-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "dashboard/img/notes-bg.png" %}'), 
+                          radial-gradient(circle at top right, rgba(0, 201, 167, 0.1), transparent 70%);
+        background-size: 200px, cover;
+        background-repeat: repeat, no-repeat;
+        background-position: center, top right;
+        opacity: 0.07;
+        z-index: -1;
+        border-radius: 16px;
+    }
+
+    /* Section Headers */
+    .converter-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .converter-header h2 {
+        position: relative;
+        display: inline-block;
+        font-size: 32px;
+        padding-bottom: 10px;
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+
+    .converter-header h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: linear-gradient(to right, var(--converter-teal), var(--converter-blue));
+        border-radius: 3px;
+    }
+
+    .converter-header p {
+        color: var(--text-muted);
+        font-size: 16px;
+        margin-top: 10px;
+    }
+
+    /* Converter Form Styling */
+    .converter-form-container {
+        background-color: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 30px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .converter-form-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--converter-teal), var(--converter-blue));
+        border-radius: 16px 0 0 16px;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    .form-section-title i {
+        margin-right: 10px;
+        color: var(--converter-teal);
+    }
+
+    .converter-btn {
+        background: linear-gradient(135deg, var(--converter-teal), var(--converter-blue));
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 201, 167, 0.3);
+        position: relative;
+        overflow: hidden;
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .converter-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: all 0.6s ease;
+    }
+
+    .converter-btn:hover {
+        background: linear-gradient(135deg, var(--converter-blue), var(--converter-teal));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 201, 167, 0.4);
+        color: white;
+    }
+
+    .converter-btn:hover:before {
+        left: 100%;
+    }
+
+    /* Result Section */
+    .result-container {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+        border-radius: 12px;
+        padding: 25px;
+        margin-top: 30px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .result-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at top right, rgba(0, 201, 167, 0.1), transparent 70%);
+        z-index: -1;
+    }
+
+    .result-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    .result-title i {
+        margin-right: 10px;
+        color: var(--converter-teal);
+    }
+
+    .result-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-color);
+        padding: 15px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .converter-form-container {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="container converter-container">
+    <!-- Converter Header -->
+    <div class="converter-header">
+        <h2><i class="fas fa-exchange-alt me-2"></i>Unit Converter</h2>
+        <p>Convert between different units with precision and ease</p>
+    </div>
+    
+    <!-- Converter Form -->
+    <div class="converter-form-container">
+        <form method="post" action="">
+            {% csrf_token %}
             
-                {{m_form.measure2|as_crispy_field}}
+            <!-- Unit Selection Section -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="fas fa-ruler-combined"></i> Select Units
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        {{form|crispy}}
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="converter-btn">
+                        <i class="fas fa-check-circle me-2"></i> Select
+                    </button>
                 </div>
             </div>
-        </fieldset>
-        <fieldset class="form-group">
-            {{answer}}
-        </fieldset>
-        <div class="form-group">
-            <button href="" class="btn btn-outline-info" type="submit">
-                Convert
-            </button>
-        </div>
-        {% endif %}
-    </form>
+            
+            {% if input %}
+            <!-- Conversion Input Section -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <i class="fas fa-calculator"></i> Conversion Details
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        {{m_form.input|as_crispy_field}}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{m_form.measure1|as_crispy_field}}
+                    </div>
+                    <div class="col-md-6">
+                        {{m_form.measure2|as_crispy_field}}
+                    </div>
+                </div>
+                
+                <!-- Result Section -->
+                <div class="result-container">
+                    <div class="result-title">
+                        <i class="fas fa-equals"></i> Conversion Result
+                    </div>
+                    <div class="result-value">
+                        {{answer}}
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="converter-btn">
+                        <i class="fas fa-sync-alt me-2"></i> Convert
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
 </div>
+
+<!-- Include Font Awesome if not already in base.html -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 
 {% endblock content %}

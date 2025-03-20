@@ -2,127 +2,430 @@
 {% load static %} 
 {% block content %}
 
-<section class="container text-center">
-  <h3>Welcome</h3>
+<style>
+    :root {
+        --primary-color: #4338ca;
+        --primary-hover: #3730a3;
+        --primary-light: #6366f1;
+        --gradient-primary: linear-gradient(135deg, #4338ca, #3730a3);
+        --gradient-secondary: linear-gradient(135deg, #6366f1, #4338ca);
+        --dark-text: #1e293b;
+        --muted-text: #64748b;
+        --card-bg: #ffffff;
+        --page-bg: #f8fafc;
+        --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --border-radius: 16px;
+    }
 
-  <hr> <br>
-  <div class="row">
-    <div class="col-md-3">
-      <a href="{% url 'notes'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/notes.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Notes
-            </h5>
-            Create Notes to refer them later. They are stored permanently until deleted
-          </div>
-        </div>
-      </a>
+    /* Main Dashboard Container */
+    .dashboard-container {
+        padding: 40px 30px 60px;
+        background-color: var(--page-bg);
+        border-radius: var(--border-radius);
+        position: relative;
+        overflow: hidden;
+        margin: 30px 0;
+    }
+    
+    /* Background decoration elements */
+    .dashboard-container::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: var(--gradient-primary);
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    .dashboard-container::after {
+        content: '';
+        position: absolute;
+        bottom: -70px;
+        left: -70px;
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: var(--gradient-secondary);
+        opacity: 0.1;
+        z-index: 0;
+    }
+    
+    /* Dashboard Header */
+    .dashboard-header {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        margin-bottom: 50px;
+        animation: fadeInDown 0.8s ease-out;
+    }
+    
+    .dashboard-heading {
+        font-size: 2.75rem;
+        font-weight: 800;
+        color: var(--dark-text);
+        margin-bottom: 15px;
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dashboard-heading::after {
+        content: '';
+        position: absolute;
+        width: 60%;
+        height: 4px;
+        background: var(--gradient-primary);
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 2px;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.2rem;
+        color: var(--muted-text);
+        max-width: 600px;
+        margin: 20px auto 0;
+    }
+    
+    /* Card Grid Layout */
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 30px;
+        margin-bottom: 40px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Feature Card Styling */
+    .feature-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: var(--shadow-sm);
+        height: 100%;
+        border: none;
+        position: relative;
+        animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-12px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .feature-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--gradient-primary);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.4s ease;
+    }
+    
+    .feature-card:hover::after {
+        transform: scaleX(1);
+    }
+    
+    .card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        height: 100%;
+    }
+    
+    .card-image-container {
+        height: 180px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
+    
+    .feature-card:hover .card-image {
+        transform: scale(1.08);
+    }
+    
+    /* Image overlay */
+    .card-image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+    
+    .feature-card:hover .card-image-overlay {
+        opacity: 1;
+    }
+    
+    .card-content {
+        padding: 25px 20px;
+        text-align: center;
+        position: relative;
+    }
+    
+    .card-icon {
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gradient-primary);
+        color: white;
+        font-size: 24px;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .card-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--dark-text);
+        margin: 15px 0 12px;
+        transition: color 0.3s ease;
+    }
+    
+    .feature-card:hover .card-title {
+        color: var(--primary-color);
+    }
+    
+    .card-description {
+        color: var(--muted-text);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Animation delays for card grid */
+    .feature-card:nth-child(1) { animation-delay: 0.1s; }
+    .feature-card:nth-child(2) { animation-delay: 0.2s; }
+    .feature-card:nth-child(3) { animation-delay: 0.3s; }
+    .feature-card:nth-child(4) { animation-delay: 0.4s; }
+    .feature-card:nth-child(5) { animation-delay: 0.5s; }
+    .feature-card:nth-child(6) { animation-delay: 0.6s; }
+    .feature-card:nth-child(7) { animation-delay: 0.7s; }
+    .feature-card:nth-child(8) { animation-delay: 0.8s; }
+    
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .dashboard-container {
+            padding: 30px 20px 50px;
+        }
+        
+        .dashboard-heading {
+            font-size: 2.2rem;
+        }
+        
+        .card-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .dashboard-container {
+            padding: 25px 15px 40px;
+        }
+        
+        .dashboard-heading {
+            font-size: 1.8rem;
+        }
+        
+        .dashboard-subtitle {
+            font-size: 1rem;
+        }
+        
+        .card-grid {
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+    }
+</style>
+
+<section class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-heading">Welcome to Your Student Dashboard</h1>
+        <p class="dashboard-subtitle">Everything you need to organize your studies, manage assignments, and boost your productivity in one place</p>
     </div>
-
-    <div class="col-md-3">
-      <a href="{% url 'homework'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/homework.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Homework
-            </h5>
-            Add homeworks and assign them deadlines. They will be displayed prioritised by deadlines
-          </div>
+    
+    <div class="card-grid">
+        <div class="feature-card">
+            <a href="{% url 'notes'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/notes.jpg' %}" alt="Notes image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <h5 class="card-title">Notes</h5>
+                    <p class="card-description">Create notes to refer to later. They are stored permanently until deleted</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="{% url 'youtube'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/youtube.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Youtube
-            </h5>
-            Search Youtube and select your desired video to play it on youtube
-          </div>
+
+        <div class="feature-card">
+            <a href="{% url 'homework'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/homework.jpg' %}" alt="Homework image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h5 class="card-title">Homework</h5>
+                    <p class="card-description">Add homeworks and assign them deadlines. They will be displayed prioritized by deadlines</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="{% url 'todo'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/todo.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              To Do
-            </h5>
-            Add your to-do lists for your day and remove them as you finish
-          </div>
+        
+        <div class="feature-card">
+            <a href="{% url 'youtube'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/youtube.jpg' %}" alt="YouTube image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fab fa-youtube"></i>
+                    </div>
+                    <h5 class="card-title">Youtube</h5>
+                    <p class="card-description">Search Youtube and select your desired video to play it on youtube</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-  </div>
-  <br><br><br>
-  <div class="row">
-    <div class="col-md-3 ">
-      <a href="{% url 'books'%}">
-        <div class="card mt-20">
-          <img class="card-img-top" src="{% static 'images/books.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Books
-            </h5>
-            Browse books from a list of neatly organised book menu
-          </div>
+        
+        <div class="feature-card">
+            <a href="{% url 'todo'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/todo.jpg' %}" alt="Todo image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h5 class="card-title">To Do</h5>
+                    <p class="card-description">Add your to-do lists for your day and remove them as you finish</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-
-
-
-    <div class="col-md-3">
-      <a href="{% url 'dictionary'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/dictionary.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Dictionary
-            </h5>
-            A vocabulary from a book is troubling you? No problem, enter the word, and the meaning will be displayed
-            almost instantaneously.
-          </div>
+    
+        <div class="feature-card">
+            <a href="{% url 'books'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/books.jpg' %}" alt="Books image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h5 class="card-title">Books</h5>
+                    <p class="card-description">Browse books from a list of neatly organised book menu</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="{% url 'wiki'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/wiki.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              WikiPedia
-            </h5>
-            Homework and Assignments? Search wikipedia to get fast results
-          </div>
+
+        <div class="feature-card">
+            <a href="{% url 'dictionary'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/dictionary.jpg' %}" alt="Dictionary image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-spell-check"></i>
+                    </div>
+                    <h5 class="card-title">Dictionary</h5>
+                    <p class="card-description">A vocabulary from a book is troubling you? No problem, enter the word, and the meaning will be displayed
+                    almost instantaneously.</p>
+                </div>
+            </a>
         </div>
-      </a>
-    </div>
-
-
-    <div class="col-md-3">
-      <a href="{% url 'conversion'%}">
-        <div class="card">
-          <img class="card-img-top" src="{% static 'images/conversion.jpg' %}" alt="Notes image">
-          <div class="card-body">
-            <h5 class="card-title ">
-              Conversion
-            </h5>
-            Check out the conversion table, that helps you to convert measurements to more familiar ones of your choice.
-          </div>
+        
+        <div class="feature-card">
+            <a href="{% url 'wiki'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/wiki.jpg' %}" alt="Wikipedia image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fab fa-wikipedia-w"></i>
+                    </div>
+                    <h5 class="card-title">WikiPedia</h5>
+                    <p class="card-description">Homework and Assignments? Search wikipedia to get fast results</p>
+                </div>
+            </a>
         </div>
-      </a>
+
+        <div class="feature-card">
+            <a href="{% url 'conversion'%}" class="card-link">
+                <div class="card-image-container">
+                    <img class="card-image" src="{% static 'images/conversion.jpg' %}" alt="Conversion image">
+                    <div class="card-image-overlay"></div>
+                </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h5 class="card-title">Conversion</h5>
+                    <p class="card-description">Check out the conversion table, that helps you to convert measurements to more familiar ones of your choice.</p>
+                </div>
+            </a>
+        </div>
     </div>
-  </div>
-
-
 </section>
+
+<!-- Include Font Awesome if not already in base.html -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 {% endblock content %}
