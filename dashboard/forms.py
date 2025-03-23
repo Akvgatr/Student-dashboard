@@ -92,15 +92,18 @@ class ConversionVolumeForm(forms.Form):
     measure1 = forms.CharField(label='', widget=forms.Select(choices=CHOICES))
     measure2 = forms.CharField(label='', widget=forms.Select(choices=CHOICES))
 
+# In forms.py
 class ConversionSpeedForm(forms.Form):
     CHOICES = [
-        ('kmph', 'Kilometers per Hour'),
-        ('mph', 'Miles per Hour'),
-        ('mps', 'Meters per Second'),
-        ('fps', 'Feet per Second')
+        ('mph', 'Miles per hour'),
+        ('kph', 'Kilometers per hour'),
+        ('m/s', 'Meters per second'),
+        ('knot', 'Knots')
     ]
+    measure1 = forms.ChoiceField(choices=CHOICES)
+    measure2 = forms.ChoiceField(choices=CHOICES)
     input = forms.CharField(required=False, label=False, widget=forms.TextInput(
-        attrs={'type': 'number', 'placeholder': 'Enter value'}
+        attrs={'type': 'number', 'placeholder': 'Enter the Value'}
     ))
 class ConversionTimeForm(forms.Form):
     CHOICES = [

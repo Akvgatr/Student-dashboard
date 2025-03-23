@@ -187,6 +187,10 @@ def delete_todo(request,pk=None):
     Todo.objects.get(id=pk).delete()
     return redirect('todo')
 
+
+
+
+
 def books(request):
     if request.method == "POST":  
         form = DashboardForm(request.POST)
@@ -198,13 +202,24 @@ def books(request):
         result_list = []
         for i in range(min(10, len(answer.get('items', [])))):  # Avoid IndexError
             volume_info = answer['items'][i]['volumeInfo']
+            
+            # Get the rating and convert to integer if possible
+            rating = volume_info.get('averageRating', 'N/A')
+            rating_value = 0
+            try:
+                if rating != 'N/A':
+                    rating_value = int(float(rating))
+            except (ValueError, TypeError):
+                rating_value = 0
+                
             result_dic = {
                 'title': volume_info.get('title', 'N/A'),
                 'subtitle': volume_info.get('subtitle', 'N/A'),
                 'description': volume_info.get('description', 'N/A'),
                 'count': volume_info.get('pageCount', 'N/A'),
                 'categories': volume_info.get('categories', 'N/A'),
-                'rating': volume_info.get('averageRating', 'N/A'),  # Corrected key
+                'rating': rating,
+                'rating_value': rating_value,  # Add integer rating for template use
                 'thumbnail': volume_info.get('imageLinks', {}).get('thumbnail', ''),
                 'preview': volume_info.get('previewLink', ''),
             }
@@ -221,8 +236,6 @@ def books(request):
     
     context = {'form': form}  
     return render(request, "dashboard/books.html", context)
-
-
 
 
 
@@ -309,18 +322,24 @@ def conversion(request):
                 second = request.POST.get('measure2')
                 input_value = request.POST.get('input')
 
-                conversions = {
-                    'yard': {'foot': 3, 'meter': 0.9144, 'inch': 36},
-                    'foot': {'yard': 1/3, 'meter': 0.3048, 'inch': 12},
-                    'meter': {'yard': 1.09361, 'foot': 3.28084, 'inch': 39.3701},
-                    'inch': {'foot': 1/12, 'yard': 1/36, 'meter': 0.0254},
-                    'mile': {'km': 1.60934},
-                    'km': {'mile': 0.621371}
-                }
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    conversions = {
+                        'yard': {'foot': 3, 'meter': 0.9144, 'inch': 36},
+                        'foot': {'yard': 1/3, 'meter': 0.3048, 'inch': 12},
+                        'meter': {'yard': 1.09361, 'foot': 3.28084, 'inch': 39.3701},
+                        'inch': {'foot': 1/12, 'yard': 1/36, 'meter': 0.0254},
+                        'mile': {'km': 1.60934},
+                        'km': {'mile': 0.621371}
+                    }
 
-                if first in conversions and second in conversions[first]:
-                    result = float(input_value) * conversions[first][second]
-                    answer = f'{input_value} {first} = {result:.4f} {second}'
+                    if first in conversions and second in conversions[first]:
+                        result = input_value * conversions[first][second]
+                        answer = f'{input_value} {first} = {result:.4f} {second}'
+                except ValueError:
+                    answer = "Please enter a valid number"
 
         elif measurement_type == 'mass':
             measurement_form = ConversionMassForm()
@@ -329,82 +348,131 @@ def conversion(request):
                 second = request.POST.get('measure2')
                 input_value = request.POST.get('input')
 
-                conversions = {
-                    'pound': {'kilogram': 0.453592, 'gram': 453.592, 'ounce': 16},
-                    'kilogram': {'pound': 2.20462, 'gram': 1000},
-                    'gram': {'kilogram': 0.001, 'pound': 0.00220462},
-                    'ounce': {'pound': 1/16},
-                    'ton': {'kilogram': 907.184, 'pound': 2000}
-                }
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    conversions = {
+                        'pound': {'kilogram': 0.453592, 'gram': 453.592, 'ounce': 16},
+                        'kilogram': {'pound': 2.20462, 'gram': 1000},
+                        'gram': {'kilogram': 0.001, 'pound': 0.00220462},
+                        'ounce': {'pound': 1/16},
+                        'ton': {'kilogram': 907.184, 'pound': 2000}
+                    }
 
-                if first in conversions and second in conversions[first]:
-                    result = float(input_value) * conversions[first][second]
-                    answer = f'{input_value} {first} = {result:.4f} {second}'
+                    if first in conversions and second in conversions[first]:
+                        result = input_value * conversions[first][second]
+                        answer = f'{input_value} {first} = {result:.4f} {second}'
+                except ValueError:
+                    answer = "Please enter a valid number"
 
         elif measurement_type == 'temperature':
             measurement_form = ConversionTemperatureForm()
             if 'input' in request.POST:
                 first = request.POST.get('measure1')
                 second = request.POST.get('measure2')
-                input_value = float(request.POST.get('input'))
+                input_value = request.POST.get('input')
 
-                if first == 'Celsius' and second == 'Fahrenheit':
-                    result = (input_value * 9/5) + 32
-                elif first == 'Fahrenheit' and second == 'Celsius':
-                    result = (input_value - 32) * 5/9
-                elif first == 'Celsius' and second == 'Kelvin':
-                    result = input_value + 273.15
-                elif first == 'Kelvin' and second == 'Celsius':
-                    result = input_value - 273.15
-                elif first == 'Fahrenheit' and second == 'Kelvin':
-                    result = (input_value - 32) * 5/9 + 273.15
-                elif first == 'Kelvin' and second == 'Fahrenheit':
-                    result = (input_value - 273.15) * 9/5 + 32
-                else:
-                    result = input_value  # If same units
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    if first == 'Celsius' and second == 'Fahrenheit':
+                        result = (input_value * 9/5) + 32
+                    elif first == 'Fahrenheit' and second == 'Celsius':
+                        result = (input_value - 32) * 5/9
+                    elif first == 'Celsius' and second == 'Kelvin':
+                        result = input_value + 273.15
+                    elif first == 'Kelvin' and second == 'Celsius':
+                        result = input_value - 273.15
+                    elif first == 'Fahrenheit' and second == 'Kelvin':
+                        result = (input_value - 32) * 5/9 + 273.15
+                    elif first == 'Kelvin' and second == 'Fahrenheit':
+                        result = (input_value - 273.15) * 9/5 + 32
+                    else:
+                        result = input_value  # If same units
 
-                answer = f'{input_value} {first} = {result:.2f} {second}'
+                    answer = f'{input_value} {first} = {result:.2f} {second}'
+                except ValueError:
+                    answer = "Please enter a valid number"
 
         elif measurement_type == 'time':
             measurement_form = ConversionTimeForm()
             if 'input' in request.POST:
                 first = request.POST.get('measure1')
                 second = request.POST.get('measure2')
-                input_value = float(request.POST.get('input'))
+                input_value = request.POST.get('input')
 
-                conversions = {
-                    'second': {'minute': 1/60, 'hour': 1/3600, 'day': 1/86400},
-                    'minute': {'second': 60, 'hour': 1/60, 'day': 1/1440},
-                    'hour': {'second': 3600, 'minute': 60, 'day': 1/24},
-                    'day': {'second': 86400, 'minute': 1440, 'hour': 24, 'week': 1/7, 'month': 1/30, 'year': 1/365},
-                    'week': {'day': 7, 'month': 1/4.345, 'year': 1/52},
-                    'month': {'day': 30, 'year': 1/12},
-                    'year': {'day': 365, 'month': 12}
-                }
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    conversions = {
+                        'second': {'minute': 1/60, 'hour': 1/3600, 'day': 1/86400},
+                        'minute': {'second': 60, 'hour': 1/60, 'day': 1/1440},
+                        'hour': {'second': 3600, 'minute': 60, 'day': 1/24},
+                        'day': {'second': 86400, 'minute': 1440, 'hour': 24, 'week': 1/7, 'month': 1/30, 'year': 1/365},
+                        'week': {'day': 7, 'month': 1/4.345, 'year': 1/52},
+                        'month': {'day': 30, 'year': 1/12},
+                        'year': {'day': 365, 'month': 12}
+                    }
 
-                if first in conversions and second in conversions[first]:
-                    result = input_value * conversions[first][second]
-                    answer = f'{input_value} {first} = {result:.2f} {second}'
+                    if first in conversions and second in conversions[first]:
+                        result = input_value * conversions[first][second]
+                        answer = f'{input_value} {first} = {result:.2f} {second}'
+                except ValueError:
+                    answer = "Please enter a valid number"
 
         elif measurement_type == 'volume':
             measurement_form = ConversionVolumeForm()
             if 'input' in request.POST:
                 first = request.POST.get('measure1')
                 second = request.POST.get('measure2')
-                input_value = float(request.POST.get('input'))
+                input_value = request.POST.get('input')
 
-                conversions = {
-                    'liter': {'milliliter': 1000, 'cubic meter': 0.001, 'gallon': 0.264172},
-                    'milliliter': {'liter': 0.001},
-                    'cubic meter': {'liter': 1000},
-                    'gallon': {'liter': 3.78541, 'quart': 4},
-                    'quart': {'gallon': 1/4, 'pint': 2},
-                    'pint': {'quart': 1/2}
-                }
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    conversions = {
+                        'liter': {'milliliter': 1000, 'cubic meter': 0.001, 'gallon': 0.264172},
+                        'milliliter': {'liter': 0.001},
+                        'cubic meter': {'liter': 1000},
+                        'gallon': {'liter': 3.78541, 'quart': 4},
+                        'quart': {'gallon': 1/4, 'pint': 2},
+                        'pint': {'quart': 1/2}
+                    }
 
-                if first in conversions and second in conversions[first]:
-                    result = input_value * conversions[first][second]
-                    answer = f'{input_value} {first} = {result:.2f} {second}'
+                    if first in conversions and second in conversions[first]:
+                        result = input_value * conversions[first][second]
+                        answer = f'{input_value} {first} = {result:.2f} {second}'
+                except ValueError:
+                    answer = "Please enter a valid number"
+        elif measurement_type == 'speed':
+            measurement_form = ConversionSpeedForm()  # You'll need to create this form class
+            if 'input' in request.POST:
+                first = request.POST.get('measure1')
+                second = request.POST.get('measure2')
+                input_value = request.POST.get('input')
+
+                # Safe float conversion
+                try:
+                    input_value = float(input_value) if input_value.strip() else 0
+                    
+                    conversions = {
+                        'mph': {'kph': 1.60934, 'm/s': 0.44704, 'knot': 0.868976},
+                        'kph': {'mph': 0.621371, 'm/s': 0.277778, 'knot': 0.539957},
+                        'm/s': {'mph': 2.23694, 'kph': 3.6, 'knot': 1.94384},
+                        'knot': {'mph': 1.15078, 'kph': 1.852, 'm/s': 0.514444}
+                    }
+
+                    if first in conversions and second in conversions[first]:
+                        result = input_value * conversions[first][second]
+                        answer = f'{input_value} {first} = {result:.2f} {second}'
+                    else:
+                        answer = "Conversion not available"
+                except ValueError:
+                    answer = "Please enter a valid number"
 
         else:
             measurement_form = None

@@ -354,16 +354,16 @@
                                     </div>
                                     {% endif %}
                                     
-                                    {% if result.rating %}
-                                    <div class="book-meta-item">
-                                        <i class="fas fa-star"></i> {{ result.rating }}
-                                        <span class="rating-stars">
-                                            {% with ''|center:result.rating as range %}
-                                            {% for _ in range %}★{% endfor %}
-                                            {% endwith %}
-                                        </span>
-                                    </div>
-                                    {% endif %}
+{% if result.rating and result.rating != 'N/A' %}
+<div class="book-meta-item">
+    <i class="fas fa-star"></i> {{ result.rating }}
+    <span class="rating-stars">
+        {% with ''|center:result.rating_value as range %}
+        {% for _ in range %}★{% endfor %}
+        {% endwith %}
+    </span>
+</div>
+{% endif %}
                                 </div>
                             </div>
                         </div>
